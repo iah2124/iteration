@@ -1,0 +1,15 @@
+---
+title: "iteration_and_listcols"
+author: "Iris Hart"
+date: "2024-10-24"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Load packages
+```{r}
+library(tidyverse)
+library(rvest)
+```

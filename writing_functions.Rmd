@@ -1,0 +1,208 @@
+---
+title: "writing_functions"
+author: "Iris Hart"
+date: "2024-10-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+load key packages.
+```{r}
+library(tidyverse)
+library(readxl)
+library(rvest)
+```
+
+## Writing my first function! 
+
+as an example here is a z-score computation!
+```{r}
+x_vec = rnorm(n = 25, mean = 10, sd = 3.5)
+
+(x_vec - mean(x_vec)) / sd(x_vec)
+```
+
+Now i will write a function to do this 
+```{r}
+z_scores = function(x){
+  
+  if (!is.numeric(x)) {
+    stop("x needs to be numeric")
+  }
+  
+  if(length(x) < 5) {
+    stop("you need at least 5 numbers to compute the z score")
+  }
+  
+  z = (x - mean(x)) / sd(x)
+
+  return(z)  
+  
+}
+z_scores(x = x_vec)
+```
+
+does this always work?
+
+```{r, error = TRUE}
+z_scores(x =3)
+z_scores(x = c("my", "name", "is", "jeff"))
+```
+
+## A new function!
+
+```{r}
+mean_and_sd = function(x) {
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  out_df = tibble(
+    mean = mean_x,
+    sd = sd_x
+  )
+  
+  return(out_df)
+}
+
+x_vec <- c(1, 2, 3, 4, 5)
+
+mean_and_sd(x_vec)
+
+```
+
+## Check sruff using a simulation 
+```{r}
+sim_df = tibble(
+  x = rnorm(30, 10, 5)
+)
+
+sim_df |>
+  summarize(
+    mean = mean(x),
+    sd = sd(x)
+  )
+
+```
+
+simulation to 
+```{r}
+sim_mean_sd = function(samp_size, true_mean, true_sd) {
+  sim_df = 
+    tibble(
+      x = rnorm(samp_size, true_mean, true_sd)
+    )
+  
+  out_df = 
+    sim_df |>
+    summarize(
+      mean = mean(x),
+      sd = sd(x)
+    )
+  
+  return(out_df)
+}
+
+
+sim_mean_sd(samp_size = 30, true_mean = 4, true_sd = 12)
+sim_mean_sd(true_mean = 4, true_sd = 12, samp_size = 30)
+
+```
+
+## Revist LOTR
+
+```{r}
+fellowship_df = 
+  read_excel("~/Desktop/iteration/LotR_Words.xlsx", range = "B3:D6") |>
+  mutate(movie = "fellowship")
+
+two_towers_df = 
+  read_excel("~/Desktop/iteration/LotR_Words.xlsx", range = "F3:H6") |>
+  mutate(movie = "two_towers")
+
+return_king_df = 
+  read_excel("~/Desktop/iteration/LotR_Words.xlsx", range = "J3:L6") |>
+  mutate(movie = "return_king")
+
+```
+
+```{r}
+lotr_import = function(cell_range, movie_title) {
+  
+  movie_df = 
+    read_excel("~/Desktop/iteration/LotR_Words.xlsx", range = cell_range) |> 
+    mutate(movie = movie_title) |> 
+    pivot_longer(
+      cols = Female:Male,  
+      names_to = "sex",
+      values_to = "words"
+    ) |> 
+    select(movie, everything())  
+  return(movie_df)
+}
+
+
+lotr_df = 
+  bind_rows(
+    lotr_import("B3:D6", "fellowship"),
+    lotr_import("F3:H6", "two_towers"),
+    lotr_import("J3:L6", "return_king")
+  )
+
+```
+
+
+## NSDUH
+
+```{r}
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+marj_table = 
+  nsduh_html |> 
+  html_table() |> 
+  nth(1) |>
+  slice(-1) |> 
+  mutate(drug = "marj")
+
+cocaine_table = 
+  nsduh_html |> 
+  html_table() |> 
+  nth(4) |>
+  slice(-1) |> 
+  mutate(drug = "cocaine")
+
+heroin_table = 
+nsduh_html |> 
+  html_table() |> 
+  nth(5) |>
+  slice(-1) |> 
+  mutate(drug = "heroin")
+```
+
+```{r}
+nsduh_table_format =function(html, table_num, table_name) {
+  out_table = 
+    html |>
+    html_table() |>
+    nth(table_num) |>
+    slice(-1) |> 
+    mutate(drug = table_name) |>
+    select(-contains("P Value"))
+  return(out_table)
+}
+
+bind_rows(
+  nsduh_table_format(html = nsduh_html, 1, "marj"),
+  nsduh_table_format(html = nsduh_html, 4, "cocaine"),
+  nsduh_table_format(html = nsduh_html, 5, "heroin")
+)
+
+
+```
+
+
